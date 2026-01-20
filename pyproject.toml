@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dynnow"
+version = "0.1"
+description = "Dynamical analysis tools for nowcasting"
+authors = [
+    {name = "Martin Bonte", email = "martin.bonte@meteo.com"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    'pysteps',
+    'xarray>=2025.11',
+    'numba',
+    'matplotlib'
+]
+
+[tool.setuptools.packages.find]
+where = ['src']

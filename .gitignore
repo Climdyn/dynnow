@@ -1,0 +1,11 @@
+test/
+.ipynb_checkpoints/
+src/dynnow.egg-info/
+src/dynnow/analysis_old.py
+src/dynnow/dynnow.egg-info/
+src/dynnow/noise.py
+src/dynnow/not_used_anymore.py
+src/dynnow/tools_old.py
+src/dynnow/predict.py
+src/dynnow/analysis_old.py
+src/dynnow/.ipynb_checkpoints/
