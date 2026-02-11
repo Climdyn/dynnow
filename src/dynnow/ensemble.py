@@ -13,32 +13,36 @@ class Ensemble(xr.Dataset):
     # https://www.pythontutorial.net/python-oop/python-__slots__/
     __slots__ = ()
     
-    def __init__(self, nowcasts, observation, lead_times, bias = None, ensemble_type = None):
-        '''members has shape (lead time, members, y, x) and observation has shape (lead time, y, x). Bias has shape (lead time, y, x)'''
-
-        assert len(nowcasts.shape) == 4
-        assert len(observation.shape) == 3
-        assert nowcasts[:, 0].shape == observation.shape
-
-        ensemble_mean = nowcasts.mean(axis = 1)
-        attrs = {'spatial_shape': nowcasts.shape[-2:]}
+    def __init__(self, dataset, ensemble_type = None):
+        '''dataset.nowcasts has shape (lead time, members, y, x) and dataset.observation has shape (lead time, y, x), dataset.bias has shape (lead time, y, x)'''
+        
+        attrs = {'ensemble': 'True'}
         if ensemble_type is not None:
             attrs['ensemble_type'] = ensemble_type
+        if 'nowcasts' in dataset:
+            attrs['spatial_shape'] = dataset.nowcasts.shape[-2:]
+        elif 'observation' in dataset:
+            attrs['spatial_shape'] = dataset.observation.shape[-2:]
         
-        super().__init__(data_vars = {'nowcasts': (('lead_time', 'member', 'y', 'x'), nowcasts),
-                                      'observation': (('lead_time', 'y', 'x'), observation),
-                                      'ensemble_mean': (('lead_time', 'y', 'x'), ensemble_mean),
-                                      'error': (('lead_time', 'y', 'x'), observation - ensemble_mean),
-                                     },
-                         coords = {'lead_time': lead_times},
-                         attrs = attrs
-                        )
+        super().__init__(dataset)
+        self.attrs.update(attrs)
 
-        if bias is not None:
-            self['debiased_error'] = xr.DataArray(observation - bias - ensemble_mean, dims = ('lead_time', 'y', 'x'), coords = {'lead_time': self.lead_time})
+        if 'ensemble_mean' not in self and 'nowcasts' in self:            
+            self['ensemble_mean'] = self.nowcasts.mean(axis = 1)
+        if 'error' not in self and 'observation' in self and 'ensemble_mean' in self:
+            self['error'] = self.observation - self.ensemble_mean
+        if 'bias' in self and 'debiased_error' not in self and 'observation' in self and 'ensemble_mean' in self:
+            self['debiased_error'] = xr.DataArray(self.observation - self.bias - self.ensemble_mean, dims = ('lead_time', 'y', 'x'), coords = {'lead_time': self.lead_time})
+
+    def check_has_spatial_shape(self):
+        if 'spatial_shape' not in self.attrs:
+            print('Please provide a nowcasts or observations to compute the spatial shape, or set it explicitly in the attributes')
+            self.spatial_shape # raise the attribute error
     
     def comp_scales(self):
         '''return the scales corresponding the rapsd function of pysteps'''
+        self.check_has_spatial_shape()
+        
         l = max(self.spatial_shape)
         if l % 2 == 1:
             r_range = np.arange(0, int(l / 2) + 1)
@@ -86,6 +90,8 @@ class Ensemble(xr.Dataset):
         self['spectral_eigenvec'] = xr.DataArray(spectral_eigenvec, dims = ('lead_time', 'order', 'scale'), coords = {'lead_time': self.lead_time, 'scale': scales})
     
     def comp_eigenval_eigenvec(self):
+        self.check_has_spatial_shape()
+        
         eigenval = da.full((len(self.lead_time), self.nowcasts.data.shape[1] - 1), np.nan, chunks = (1, -1))
         eigenvec = da.full((len(self.lead_time), self.nowcasts.data.shape[1] - 1,) + self.spatial_shape, np.nan, chunks = (1, -1, -1, -1))
 
@@ -174,7 +180,8 @@ class Ensemble(xr.Dataset):
         self.comp_eigenval_eigenvec()
         self.comp_spectral_eigenvec()
         self.comp_cosine_error_members()
-        self.comp_cosine_error_projection()                 
+        self.comp_cosine_error_projection()  
+        self.comp_histos_projection_eigenvec()
         self.comp_FSS(thresholds = thresholds_FSS, scales = scales_FSS)
     
     def generate_surrogates(self, ensemble_type, **kwargs):
@@ -195,9 +202,13 @@ class Ensemble(xr.Dataset):
                                                                            shape = self.nowcasts.shape[1:],
                                                                            dtype = np.float64)
     
-        surrogates = Ensemble(surrogates, self.observation.data, lead_times = self.lead_time.data, ensemble_type = ensemble_type)
+        surrogates = Ensemble(xr.Dataset(data_vars = {'nowcasts': (('lead_time', 'member', 'y', 'x'), surrogates),
+                                                      'observation': self.observation},
+                                         coords = self.coords),
+                              ensemble_type = ensemble_type)
     
         return surrogates
+        
 
 @delayed
 def comp_spectral_variance_one_lead_time(x):

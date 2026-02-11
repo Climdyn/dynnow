@@ -17,7 +17,7 @@ def ax_histo_projection_eigenvec(ax, histo, title = None, **kwargs):
 
 def ax_eigenval_order(ax, eigenval, title = None, **kwargs):
     '''spectrum of eigenvalues for one lead time'''
-
+    
     for ct in range(len(eigenval.central_time)):
         e = eigenval.isel(central_time = ct)
         ax.plot(e/e.max(dim = 'order'), **kwargs)
@@ -27,7 +27,8 @@ def ax_eigenval_order(ax, eigenval, title = None, **kwargs):
     ax.set_xlabel('Order of the eigenvalue')
 
 def ax_eigenval_lead_time(ax, eigenval, title = None, **kwargs):
-    ax.plot(eigenval.lead_time, eigenval, **kwargs)
+    lead_times = eigenval.lead_time.data/np.timedelta64(1, 'm')
+    ax.plot(lead_times, eigenval, **kwargs)
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_ylabel(r"Eigenvalues $\lambda_i$'s ($\text{dBR}^2$)")
@@ -37,7 +38,7 @@ def ax_eigenval_lead_time(ax, eigenval, title = None, **kwargs):
 
 def ax_spectral_field(ax, spectral_ensemble_mean, cmap = cm.viridis, title = None, ylabel = None, **kwargs):
 
-    lead_times = spectral_ensemble_mean.lead_time
+    lead_times = spectral_ensemble_mean.lead_time.data/np.timedelta64(1, 'm')
     norm = mcolors.Normalize(vmin = np.min(lead_times), vmax = np.max(lead_times))
 
     for lt, lead_t in enumerate(lead_times):
@@ -67,10 +68,10 @@ def axs_spectral_vec(axs, eigenval, spectral_eigenvec, t_plots, norm, cmap = cm.
         ax.xaxis.set_inverted(True)
 
 def ax_cosine_error_projection(ax, cosine_error_projection, label, linestyle = 'solid', title = None):
-    
+    lead_times = cosine_error_projection.lead_time.data/np.timedelta64(1, 'm')
     for i, ct in enumerate(cosine_error_projection.central_time):
-        ax.plot(cosine_error_projection.lead_time, cosine_error_projection.sel(central_time = ct), alpha = 0.5, c = f'C{i}', linestyle = linestyle)
-    ax.plot(cosine_error_projection.lead_time, cosine_error_projection.mean(dim = 'central_time').data, linewidth = 5, c = 'black', linestyle = linestyle)
+        ax.plot(lead_times, cosine_error_projection.sel(central_time = ct), alpha = 0.5, c = f'C{i}', linestyle = linestyle)
+    ax.plot(lead_times, cosine_error_projection.mean(dim = 'central_time').data, linewidth = 5, c = 'black', linestyle = linestyle)
     ax.plot([], [], c = 'black', label = label, linestyle = linestyle)
 
     if title is not None:
@@ -79,11 +80,11 @@ def ax_cosine_error_projection(ax, cosine_error_projection, label, linestyle = '
 def axs_FSS(axs, FSS, cmap = cm.viridis, linestyle = 'solid', label = None):
     '''FSS has shape (time, thresholds, scales)'''
 
-    norm = mcolors.Normalize(vmin = np.min(FSS.lead_time), vmax = np.max(FSS.lead_time))
+    lead_times = FSS.lead_time.data/np.timedelta64(1, 'm')
+    norm = mcolors.Normalize(vmin = np.min(lead_times), vmax = np.max(lead_times))
 
-    
     for thr, thresh in enumerate(FSS.threshold_FSS):
-        for lt, lead_t in enumerate(FSS.lead_time):
+        for lt, lead_t in enumerate(lead_times):
             axs[thr].plot(FSS.scale_FSS, FSS.isel(lead_time = lt).sel(threshold_FSS = thresh), c = cmap(norm(lead_t)), linestyle = linestyle)
             axs[thr].set_xscale('log')
             axs[thr].set_xlabel('scale (km)')
