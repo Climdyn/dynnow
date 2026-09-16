@@ -1,4 +1,6 @@
 import xarray as xr
+import numpy as np
+from dynnow.comparison import comp_principal_angles
 
 def comp_ensemble_convergence(ensemble, smaller_sizes = [5, 10, 20, 50], agreement_order = 4):
     '''
@@ -6,7 +8,7 @@ def comp_ensemble_convergence(ensemble, smaller_sizes = [5, 10, 20, 50], agreeme
     Several smaller ensembles are defined (of sizes smaller_sizes) and the eigenvalues of the covariance matrices of these ensembles are computed
     Are also computed the principal angles between the eigenvectors of the smaller ensembles and those of the full ensemble
     '''
-    if not 'eigenval' not in ensemble or 'spectral_eigenvec' not in self:
+    if 'eigenval' not in ensemble or 'spectral_eigenvec' not in ensemble:
         ensemble.comp_eigenval_eigenvec()
 
     ensemble_convergence = xr.DataTree(xr.Dataset(data_vars = {'lead_time': ensemble.lead_time}))
