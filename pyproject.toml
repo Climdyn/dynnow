@@ -4,18 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dynnow"
-version = "0.1"
-description = "Dynamical analysis tools for nowcasting"
+version = "3.0"
+description = "Dynamical analysis tools for ensemble forecasts, diagnostics computed from Gram matrices (pixel or spectral space)"
 authors = [
     {name = "Martin Bonte", email = "martin.bonte@meteo.com"},
 ]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
     'pysteps',
     'xarray>=2025.11',
     'numba',
-    'matplotlib'
+    'pyshtools',
+    'scipy',
 ]
 
 [tool.setuptools.packages.find]

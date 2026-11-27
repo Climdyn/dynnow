@@ -9,3 +9,4 @@ src/dynnow/tools_old.py
 src/dynnow/predict.py
 src/dynnow/analysis_old.py
 src/dynnow/.ipynb_checkpoints/
+__pycache__/
